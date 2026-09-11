@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useApp } from "./providers";
 import { analyzeText, analyzeFile, type TextReport, type FileReport } from "@/lib/identify";
 
@@ -29,6 +29,13 @@ export function Identify({ compact = false }: { compact?: boolean }) {
     setFileReport(null); setImgUrl(null);
     if (!v.trim()) { setTextReport(null); return; }
     setTextReport(analyzeText(v));
+  }, []);
+
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search).get("q");
+      if (q) { setText(q); setTextReport(analyzeText(q)); }
+    } catch {}
   }, []);
 
   const runFile = useCallback(async (file: File) => {

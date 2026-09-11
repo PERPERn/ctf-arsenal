@@ -13,7 +13,7 @@ to both **Vercel** and **Render**.
 
 ## ✨ Features / จุดเด่น
 
-- **~60 tools** across 10 categories (recon, web, crypto, forensics, stego, reverse/pwn, network, password, mobile, misc).
+- **100+ tools** across 10 categories (recon, web, crypto, forensics, stego, reverse/pwn, network, password, mobile, misc).
 - Each tool page: bilingual overview + our own notes, install commands, usage, a cheatsheet, official-docs link, and a **replayable terminal demo**.
 - **Identify** (`/identify`): paste text or drop a file/image → it detects hashes, encodings, ciphers, file magic; auto-decodes in layers; and suggests the next tool. Ported from our `ctfid` CLI. Runs 100% in the browser.
 - Dark-first design, TH/EN toggle, instant search + category filters.

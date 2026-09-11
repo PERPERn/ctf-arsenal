@@ -157,6 +157,9 @@ export const tools: Tool[] = [
       { cmd: "gobuster dns -d site.com -w subs.txt", desc: { th: "ค้น subdomain", en: "DNS mode" } },
     ],
     tags: ["directory", "dns", "vhost", "bruteforce"],
+    demo: { title: { th: "ค้นไดเรกทอรีด้วย Gobuster", en: "Directory scan with Gobuster" }, prompt: "kali@ctf", steps: [
+      { cmd: "gobuster dir -u http://10.10.11.42 -w common.txt -q", out: "/admin                (Status: 301) [--> /admin/]\n/backup               (Status: 200) [Size: 4210]\n/robots.txt           (Status: 200) [Size: 42]\n/uploads              (Status: 301) [--> /uploads/]" },
+      { comment: "/backup returned 200 — read it next" } ] },
   },
   {
     id: "feroxbuster", name: "feroxbuster", category: "web", difficulty: 1, installed: true,
@@ -172,6 +175,9 @@ export const tools: Tool[] = [
     official: "https://docs.projectdiscovery.io/tools/nuclei", install: ["brew install nuclei"],
     usage: [{ cmd: "nuclei -u https://site", desc: { th: "สแกนเป้าหมายด้วยเทมเพลตทั้งหมด", en: "Scan a target with all templates" } }],
     tags: ["scanner", "cve", "templates"],
+    demo: { title: { th: "สแกนช่องโหว่ด้วยเทมเพลต", en: "Template vulnerability scan" }, prompt: "kali@ctf", steps: [
+      { cmd: "nuclei -u http://10.10.11.42 -silent", out: "[git-config] [http] [medium] http://10.10.11.42/.git/config\n[exposed-env] [http] [high] http://10.10.11.42/.env\n[php-info] [http] [low] http://10.10.11.42/phpinfo.php" },
+      { comment: "an exposed .git and .env — usually a quick win" } ] },
   },
   {
     id: "burp", name: "Burp Suite", category: "web", difficulty: 2, installed: true,
@@ -361,6 +367,9 @@ export const tools: Tool[] = [
     official: "https://github.com/HashPals/Name-That-Hash", install: ["uv tool install name-that-hash"],
     usage: [{ cmd: "nth -t <hash>", desc: { th: "ระบุชนิดแฮช", en: "Identify a hash" } }],
     tags: ["hash", "identify"],
+    demo: { title: { th: "ระบุชนิดแฮช", en: "Identify a hash" }, prompt: "ctf", steps: [
+      { cmd: "nth -t 5f4dcc3b5aa765d61d8327deb882cf99", out: "Most Likely\nMD5, HC: 0 JtR: raw-md5\nNTLM, HC: 1000 JtR: nt\nLM, HC: 3000 JtR: lm" },
+      { comment: "32 hex → MD5 most likely; crack with hashcat -m 0" } ] },
   },
   {
     id: "hydra", name: "Hydra", category: "password", difficulty: 2, installed: true,
@@ -369,6 +378,9 @@ export const tools: Tool[] = [
     official: "https://github.com/vanhauser-thc/thc-hydra", install: ["brew install hydra"],
     usage: [{ cmd: "hydra -l admin -P rockyou.txt ssh://10.10.11.42", desc: { th: "brute SSH", en: "Brute SSH" } }],
     tags: ["bruteforce", "login", "ssh", "ftp"],
+    demo: { title: { th: "brute-force ล็อกอิน SSH", en: "Brute-force an SSH login" }, prompt: "kali@ctf", steps: [
+      { cmd: "hydra -l admin -P rockyou.txt ssh://10.10.11.42 -t 4", out: "[DATA] attacking ssh://10.10.11.42:22/\n[22][ssh] host: 10.10.11.42   login: admin   password: hunter2\n1 of 1 target successfully completed, 1 valid password found" },
+      { comment: "admin:hunter2 — now ssh in" } ] },
   },
   {
     id: "xortool", name: "xortool", category: "crypto", difficulty: 2, installed: true,
@@ -376,6 +388,9 @@ export const tools: Tool[] = [
     description: { th: "เดาความยาว key ของ XOR แล้วกู้ key และ plaintext กลับมา", en: "Guesses the key length of a repeating-key XOR then recovers the key and plaintext." },
     official: "https://github.com/hellman/xortool", install: ["uv tool install xortool"],
     tags: ["xor", "crypto"],
+    demo: { title: { th: "กู้ key ของ repeating-XOR", en: "Recover a repeating-XOR key" }, prompt: "ctf", steps: [
+      { cmd: "xortool cipher.bin -c 20", out: "The most probable key lengths:\n   5:  18.2%\n  10:  12.1%\nProbable key length: 5\nProbable key: b'CTFXR'\n[+] Written to xortool_out/" },
+      { comment: "key length 5, key CTFXR — plaintext is in xortool_out/" } ] },
   },
   {
     id: "sage", name: "SageMath", category: "crypto", difficulty: 3, installed: false,
@@ -824,6 +839,9 @@ export const tools: Tool[] = [
     description: { th: "port scanner ที่เร็วมาก เหมาะกับสแกนช่วง IP กว้าง ๆ ก่อนเจาะด้วย nmap", en: "An extremely fast port scanner for sweeping wide IP ranges before drilling in with nmap." },
     official: "https://github.com/robertdavidgraham/masscan", install: ["brew install masscan"],
     tags: ["scan", "port", "fast"],
+    demo: { title: { th: "สแกนพอร์ตช่วง IP เร็ว ๆ", en: "Fast port sweep of a range" }, prompt: "kali@ctf", steps: [
+      { cmd: "masscan 10.10.11.0/24 -p1-65535 --rate 10000", out: "Discovered open port 22/tcp on 10.10.11.42\nDiscovered open port 80/tcp on 10.10.11.42\nDiscovered open port 8080/tcp on 10.10.11.42\nDiscovered open port 445/tcp on 10.10.11.9" },
+      { comment: "found live hosts fast — hand the ports to nmap -sV" } ] },
   },
   {
     id: "netcat", name: "netcat / ncat", category: "network", difficulty: 1, featured: false, installed: true,
@@ -835,6 +853,9 @@ export const tools: Tool[] = [
       { cmd: "nc -lvnp 4444", desc: { th: "ฟัง reverse shell", en: "Listen for a reverse shell" } },
     ],
     tags: ["tcp", "shell", "listen", "connect"],
+    demo: { title: { th: "ต่อบริการ CTF ด้วย netcat", en: "Talk to a CTF service" }, prompt: "kali@ctf", steps: [
+      { cmd: "nc chall.ctf.io 1337", out: "Welcome! Answer the math to get the flag.\n7 * 6 = ?" },
+      { cmd: "42", out: "Correct! CTT{n3tc4t_t4lks_tcp}" } ] },
   },
   {
     id: "aircrack-ng", name: "Aircrack-ng", category: "network", difficulty: 3, installed: true,
@@ -849,6 +870,9 @@ export const tools: Tool[] = [
     description: { th: "สร้างกฎ (string + condition) เพื่อค้นไฟล์ที่เข้าเกณฑ์ ใช้ทั้ง malware analysis และ threat hunting", en: "Build rules (strings + condition) to flag matching files — used in malware analysis and threat hunting." },
     official: "https://yara.readthedocs.io/", install: ["brew install yara"],
     tags: ["malware", "rules", "hunting"],
+    demo: { title: { th: "จับไฟล์ด้วยกฎ YARA", en: "Match files with a YARA rule" }, prompt: "ctf", steps: [
+      { cmd: "yara -r flag_rule.yar ./samples/", out: "flag_marker ./samples/note.bin\nflag_marker ./samples/dump.raw" },
+      { comment: "two samples contain the byte pattern the rule looks for" } ] },
   },
 
   // ───────────────────────────── MOBILE ─────────────────────────────
@@ -967,6 +991,9 @@ export const tools: Tool[] = [
     official: "https://github.com/mchehab/zbar", install: ["brew install zbar"],
     usage: [{ cmd: "zbarimg code.png", desc: { th: "อ่าน QR จากรูป", en: "Read a QR from an image" } }],
     tags: ["qr", "barcode"],
+    demo: { title: { th: "อ่าน QR จากรูป", en: "Read a QR from an image" }, prompt: "ctf", steps: [
+      { cmd: "zbarimg -q qr.png", out: "QR-Code:CTT{qr_c0d3_d3c0d3d}" },
+      { comment: "the QR encodes the flag directly" } ] },
   },
   {
     id: "tesseract", name: "Tesseract OCR", category: "misc", difficulty: 1, installed: true,
@@ -975,6 +1002,9 @@ export const tools: Tool[] = [
     official: "https://github.com/tesseract-ocr/tesseract", install: ["brew install tesseract"],
     usage: [{ cmd: "tesseract image.png -", desc: { th: "OCR ออกทางหน้าจอ", en: "OCR to stdout" } }],
     tags: ["ocr", "image", "text"],
+    demo: { title: { th: "OCR ข้อความจากรูป", en: "OCR text out of an image" }, prompt: "ctf", steps: [
+      { cmd: "tesseract flag_screenshot.png -", out: "The password for the next stage is\nCTT{0cr_r34ds_th3_1m4g3}" },
+      { comment: "text baked into the image, now machine-readable" } ] },
   },
   {
     id: "cyberchef-magic", name: "p7zip", category: "misc", difficulty: 1, installed: true,
@@ -997,6 +1027,333 @@ export const tools: Tool[] = [
     description: { th: "รวม wordlist สำหรับ directory, password, subdomain, fuzzing ที่ทุกคนใช้ (รวม rockyou)", en: "The collection everyone uses: directories, passwords, subdomains, fuzzing payloads (rockyou included)." },
     official: "https://github.com/danielmiessler/SecLists", install: ["brew install seclists", "# or git clone the repo"],
     tags: ["wordlist", "rockyou", "fuzzing"],
+  },
+
+  // ═══════════ EXPANSION: more tools across every category ═══════════
+  // ── recon ──
+  {
+    id: "subfinder-alt", name: "Sublist3r", category: "recon", difficulty: 1,
+    tagline: { th: "หา subdomain จาก search engine", en: "Subdomains via search engines" },
+    description: { th: "เครื่องมือคลาสสิกที่รวม subdomain จาก Google, Bing, VirusTotal ฯลฯ", en: "Classic tool aggregating subdomains from Google, Bing, VirusTotal and more." },
+    official: "https://github.com/aboul3la/Sublist3r", install: ["pipx install sublist3r"], tags: ["subdomain", "osint"],
+  },
+  {
+    id: "dnsrecon", name: "dnsrecon", category: "recon", difficulty: 1,
+    tagline: { th: "สำรวจ DNS ครบเครื่อง", en: "Full DNS enumeration" },
+    description: { th: " query DNS records, zone transfer, brute subdomain ในตัวเดียว", en: "Queries DNS records, attempts zone transfers and brute-forces subdomains." },
+    official: "https://github.com/darkoperator/dnsrecon", install: ["brew install dnsrecon"], tags: ["dns", "zone-transfer"],
+    demo: { title: { th: "ลอง zone transfer", en: "Attempt a zone transfer" }, prompt: "kali@ctf", steps: [
+      { cmd: "dnsrecon -d ctf.local -t axfr", out: "[*] Testing NS Servers for Zone Transfer\n[+] Zone Transfer was successful!!\n[*]      A admin.ctf.local 10.10.11.9\n[*]      A flag.ctf.local 10.10.11.42\n[*]      TXT ctf.local CTT{z0n3_tr4nsf3r_l34k}" },
+      { comment: "misconfigured NS leaked every record + a flag" } ] },
+  },
+  {
+    id: "waybackurls", name: "waybackurls", category: "recon", difficulty: 1,
+    tagline: { th: "ดึง URL เก่าจาก Wayback Machine", en: "Pull historical URLs from Wayback" },
+    description: { th: "รวม URL ที่เคยถูก index ของโดเมน มักเจอ endpoint หรือพารามิเตอร์เก่าที่ลืมปิด", en: "Collects every archived URL of a domain — often exposing forgotten endpoints or params." },
+    official: "https://github.com/tomnomnom/waybackurls", install: ["go install github.com/tomnomnom/waybackurls@latest"], tags: ["osint", "urls", "archive"],
+  },
+  {
+    id: "nikto", name: "Nikto", category: "recon", difficulty: 1,
+    tagline: { th: "สแกนเว็บเซิร์ฟเวอร์หา misconfig", en: "Scan web servers for misconfigs" },
+    description: { th: "ตรวจไฟล์/สคริปต์อันตราย, เวอร์ชันซอฟต์แวร์เก่า, การตั้งค่าผิด บนเว็บเซิร์ฟเวอร์", en: "Checks web servers for dangerous files, outdated versions and misconfigurations." },
+    official: "https://github.com/sullo/nikto", install: ["brew install nikto"], tags: ["scanner", "web", "misconfig"],
+  },
+  {
+    id: "whatweb", name: "WhatWeb", category: "recon", difficulty: 1,
+    tagline: { th: "ระบุเทคโนโลยีที่เว็บใช้", en: "Fingerprint web technologies" },
+    description: { th: "บอกว่าเว็บใช้ CMS, framework, server, JS library อะไร", en: "Identifies the CMS, framework, server and JS libraries a site runs." },
+    official: "https://github.com/urbanadventurer/WhatWeb", install: ["brew install whatweb"], tags: ["fingerprint", "web"],
+  },
+  {
+    id: "shodan", name: "Shodan CLI", category: "recon", difficulty: 2,
+    tagline: { th: "ค้นอุปกรณ์/บริการที่เปิดบนอินเทอร์เน็ต", en: "Search internet-exposed devices" },
+    description: { th: "ค้นหาโฮสต์ พอร์ต แบนเนอร์ ทั่วอินเทอร์เน็ตจากดัชนีของ Shodan (ต้องมี API key)", en: "Searches hosts, ports and banners across the internet from Shodan's index (needs an API key)." },
+    official: "https://cli.shodan.io/", install: ["pipx install shodan"], tags: ["osint", "internet", "recon"],
+  },
+
+  // ── web ──
+  {
+    id: "wfuzz", name: "Wfuzz", category: "web", difficulty: 2,
+    tagline: { th: "fuzz เว็บแบบยืดหยุ่นสูง", en: "Highly flexible web fuzzer" },
+    description: { th: "แทนคำใน request ทุกส่วน (URL, header, POST) เพื่อค้นช่องโหว่และค่าที่ซ่อน", en: "Replaces markers anywhere in a request (URL, headers, POST) to discover hidden values and bugs." },
+    official: "https://wfuzz.readthedocs.io/", install: ["pipx install wfuzz"], tags: ["fuzz", "web", "bruteforce"],
+  },
+  {
+    id: "dalfox", name: "Dalfox", category: "web", difficulty: 2,
+    tagline: { th: "สแกนและยืนยัน XSS อัตโนมัติ", en: "Automated XSS scanning & verification" },
+    description: { th: "ตรวจ reflected/stored/DOM XSS พร้อมยืนยันว่า payload ทำงานจริง", en: "Detects reflected/stored/DOM XSS and verifies that a payload actually fires." },
+    official: "https://github.com/hahwul/dalfox", install: ["brew install dalfox"], tags: ["xss", "scanner"],
+    demo: { title: { th: "หา XSS ในพารามิเตอร์", en: "Find XSS in a parameter" }, prompt: "kali@ctf", steps: [
+      { cmd: "dalfox url 'http://10.10.11.42/search?q=test'", out: "[POC][V][GET] http://10.10.11.42/search?q=<svg onload=alert(1)>\n[i] reflected param: q  (no filtering)\n[+] 1 vulnerability found" },
+      { comment: "q is reflected unescaped — classic reflected XSS" } ] },
+  },
+  {
+    id: "jwt-tool", name: "jwt_tool", category: "web", difficulty: 2,
+    tagline: { th: "วิเคราะห์และโจมตี JWT", en: "Analyse and attack JWTs" },
+    description: { th: "ถอด ตรวจ และทดสอบช่องโหว่ JWT: alg:none, key confusion, แครก secret", en: "Decodes, inspects and tests JWTs for alg:none, key confusion and secret cracking." },
+    official: "https://github.com/ticarpi/jwt_tool", install: ["pipx install jwt-tool"], tags: ["jwt", "token", "attack"],
+    demo: { title: { th: "ทดสอบ alg:none", en: "Test the alg:none attack" }, prompt: "ctf", steps: [
+      { cmd: "jwt_tool <token> -X a", out: "Original JWT:\n[+] alg = HS256\n\njwttool_none_injection:\n[+] Tampered token (alg:none):\neyJhbGciOiJub25lIn0.eyJ1c2VyIjoiYWRtaW4ifQ.\n[!] server accepted unsigned token" },
+      { comment: "backend trusted alg:none — auth bypass" } ] },
+  },
+  {
+    id: "commix", name: "Commix", category: "web", difficulty: 2,
+    tagline: { th: "เจาะ command injection อัตโนมัติ", en: "Automated command-injection exploitation" },
+    description: { th: "ตรวจและใช้ประโยชน์จาก OS command injection ในพารามิเตอร์เว็บ", en: "Detects and exploits OS command injection in web parameters." },
+    official: "https://github.com/commixproject/commix", install: ["pipx install commix"], tags: ["command-injection", "rce"],
+  },
+  {
+    id: "dirsearch", name: "dirsearch", category: "web", difficulty: 1,
+    tagline: { th: "brute path เว็บ เขียนด้วย Python", en: "Python web path brute-forcer" },
+    description: { th: "ค้นไดเรกทอรีและไฟล์ด้วย wordlist มี filter และ recursion", en: "Discovers directories and files with wordlists, filtering and recursion." },
+    official: "https://github.com/maurosoria/dirsearch", install: ["pipx install dirsearch"], tags: ["directory", "bruteforce"],
+  },
+  {
+    id: "arjun", name: "Arjun", category: "web", difficulty: 1,
+    tagline: { th: "ค้นพารามิเตอร์ HTTP ที่ซ่อน", en: "Discover hidden HTTP parameters" },
+    description: { th: "หา query/POST parameter ที่ backend รับแต่ไม่ได้โชว์ ใช้หา IDOR/injection", en: "Finds query/POST params the backend accepts but doesn't advertise — good for IDOR/injection." },
+    official: "https://github.com/s0md3v/Arjun", install: ["pipx install arjun"], tags: ["parameter", "discovery"],
+  },
+  {
+    id: "katana", name: "Katana", category: "web", difficulty: 1,
+    tagline: { th: "crawler เว็บเร็วจาก ProjectDiscovery", en: "Fast web crawler by ProjectDiscovery" },
+    description: { th: "ไต่เว็บเก็บ endpoint, JS, form อย่างเร็ว ป้อนต่อเข้า nuclei/ffuf ได้", en: "Crawls sites for endpoints, JS and forms fast; feeds into nuclei/ffuf." },
+    official: "https://github.com/projectdiscovery/katana", install: ["brew install katana"], tags: ["crawler", "spider"],
+  },
+
+  // ── crypto ──
+  {
+    id: "ciphey", name: "Ciphey", category: "crypto", difficulty: 1,
+    tagline: { th: "ถอดรหัสอัตโนมัติด้วย AI/heuristic", en: "Automated decryption with AI/heuristics" },
+    description: { th: "ป้อน ciphertext แล้วมันเดาและถอดให้เอง คล้าย ctfid แต่เน้น cipher คลาสสิก", en: "Feed ciphertext and it guesses & decrypts automatically — similar spirit to ctfid, strong on classical ciphers." },
+    official: "https://github.com/Ciphey/Ciphey", install: ["pipx install ciphey"], tags: ["auto", "decode", "cipher"],
+  },
+  {
+    id: "openssl", name: "OpenSSL", category: "crypto", difficulty: 2, installed: true,
+    tagline: { th: "มีดพับ crypto/TLS บนคอมมานด์ไลน์", en: "The command-line crypto/TLS knife" },
+    description: { th: "เข้ารหัส/ถอด, จัดการ key/cert, ตรวจ TLS, คำนวณ hash — งาน crypto พื้นฐานทำได้หมด", en: "Encrypts/decrypts, manages keys/certs, inspects TLS and computes hashes — the crypto workhorse." },
+    official: "https://docs.openssl.org/", install: ["brew install openssl@3"],
+    usage: [
+      { cmd: "openssl rsa -in key.pem -text -noout", desc: { th: "ดูค่าใน RSA key", en: "Inspect an RSA key" } },
+      { cmd: "openssl enc -d -aes-256-cbc -in c.bin -k pass", desc: { th: "ถอด AES", en: "Decrypt AES" } },
+      { cmd: "openssl s_client -connect host:443", desc: { th: "ตรวจ cert TLS", en: "Inspect a TLS cert" } },
+    ],
+    tags: ["tls", "rsa", "aes", "cert"],
+  },
+  {
+    id: "quipqiup", name: "quipqiup / substitution", category: "crypto", difficulty: 1,
+    tagline: { th: "ถอด substitution cipher อัตโนมัติ", en: "Auto-solve substitution ciphers" },
+    description: { th: "แก้ monoalphabetic substitution / cryptogram ด้วยสถิติภาษา", en: "Solves monoalphabetic substitution / cryptograms using language statistics." },
+    official: "https://quipqiup.com/", install: ["# web tool — no install"], tags: ["substitution", "cryptogram"],
+  },
+  {
+    id: "factordb", name: "FactorDB", category: "crypto", difficulty: 1,
+    tagline: { th: "เช็คว่า n ถูกแฟกเตอร์ไว้แล้วหรือยัง", en: "Check if n is already factored" },
+    description: { th: "ฐานข้อมูลการแฟกเตอร์จำนวนเต็ม โจทย์ RSA n เล็กมักโดนแฟกเตอร์ไว้แล้ว", en: "A database of integer factorizations — small RSA moduli are often already broken here." },
+    official: "http://factordb.com/", install: ["# web; or `pip install factordb-pycli`"], tags: ["rsa", "factor"],
+  },
+
+  // ── forensics ──
+  {
+    id: "bulk-extractor", name: "bulk_extractor", category: "forensics", difficulty: 2,
+    tagline: { th: "ดึง artifact จาก disk/dump แบบขนาน", en: "Extract artifacts from disks/dumps fast" },
+    description: { th: "สแกนหาอีเมล, บัตรเครดิต, URL, ไฟล์ ในภาพดิสก์โดยไม่สนใจ filesystem", en: "Scans a disk image for emails, credit cards, URLs and files, ignoring the filesystem." },
+    official: "https://github.com/simsong/bulk_extractor", install: ["brew install bulk_extractor"], tags: ["disk", "carve", "artifacts"],
+  },
+  {
+    id: "testdisk", name: "TestDisk / PhotoRec", category: "forensics", difficulty: 2,
+    tagline: { th: "กู้ partition และไฟล์ที่ถูกลบ", en: "Recover partitions and deleted files" },
+    description: { th: "TestDisk ซ่อม partition table; PhotoRec กู้ไฟล์ตาม signature จากสื่อที่เสียหาย", en: "TestDisk repairs partition tables; PhotoRec carves files by signature from damaged media." },
+    official: "https://www.cgsecurity.org/wiki/TestDisk", install: ["brew install testdisk"], tags: ["recover", "partition", "carve"],
+  },
+  {
+    id: "oletools", name: "oletools", category: "forensics", difficulty: 2,
+    tagline: { th: "วิเคราะห์มาโครใน Office/OLE", en: "Analyse macros in Office/OLE files" },
+    description: { th: "แกะ VBA macro และโครงสร้าง OLE จากไฟล์ Office ที่ต้องสงสัย (โจทย์มัลแวร์)", en: "Extracts VBA macros and OLE structure from suspicious Office files (malware challenges)." },
+    official: "https://github.com/decalage2/oletools", install: ["pipx install oletools"], tags: ["office", "macro", "malware"],
+    demo: { title: { th: "ดึงมาโครจากไฟล์ .doc", en: "Dump a macro from a .doc" }, prompt: "ctf", steps: [
+      { cmd: "olevba suspicious.doc", out: "VBA MACRO Module1\n- - - - - - - - - - - - - - - - - -\nSub AutoOpen()\n  Shell \"powershell -e <base64>\"\nEnd Sub\n\n+------------+-------------------+\n| Type       | Keyword           |\n+------------+-------------------+\n| AutoExec   | AutoOpen          |\n| Suspicious | Shell, powershell |\n+------------+-------------------+" },
+      { comment: "AutoOpen runs a base64 PowerShell payload — decode it next" } ] },
+  },
+  {
+    id: "pdf-parser", name: "pdf-parser / pdfid", category: "forensics", difficulty: 2,
+    tagline: { th: "ผ่าโครงสร้าง PDF หา object ซ่อน", en: "Dissect PDF structure for hidden objects" },
+    description: { th: "ชุดของ Didier Stevens ดู object, stream, JavaScript ที่ฝังใน PDF", en: "Didier Stevens' tools to inspect objects, streams and embedded JavaScript in PDFs." },
+    official: "https://blog.didierstevens.com/programs/pdf-tools/", install: ["pipx install pdfid pdf-parser"], tags: ["pdf", "javascript"],
+  },
+  {
+    id: "hexed", name: "hexdump / xxd", category: "forensics", difficulty: 1, installed: true,
+    tagline: { th: "ดูไบต์ดิบของไฟล์", en: "View the raw bytes of a file" },
+    description: { th: "อ่าน/แก้ไฟล์ระดับไบต์ ดู magic header หรือ patch ค่าเล็ก ๆ", en: "Read/edit files at the byte level — check magic headers or patch small values." },
+    official: "https://man7.org/linux/man-pages/man1/xxd.1.html", install: ["# xxd ships with vim; hexdump is built in"],
+    usage: [{ cmd: "xxd file | head", desc: { th: "ดู 16 ไบต์แรกต่อบรรทัด", en: "16 bytes per line" } }, { cmd: "xxd -r patched.hex > out.bin", desc: { th: "แปลง hex กลับเป็น binary", en: "Revert hex to binary" } }],
+    tags: ["hex", "bytes", "patch"],
+  },
+
+  // ── stego ──
+  {
+    id: "steghide", name: "steghide (via stegseek)", category: "stego", difficulty: 1,
+    tagline: { th: "ฝัง/แกะข้อมูลใน JPEG/WAV/BMP", en: "Embed/extract data in JPEG/WAV/BMP" },
+    description: { th: "steganography คลาสสิกที่ใช้ passphrase บน macOS ใช้ stegseek แทน (extract/crack ได้)", en: "The classic passphrase-based steganography; on macOS use stegseek as the drop-in (extract/crack)." },
+    official: "https://steghide.sourceforge.net/", install: ["# use stegseek on macOS (no steghide formula)"], tags: ["jpeg", "wav", "passphrase"],
+  },
+  {
+    id: "wavsteg", name: "WavSteg / stegolsb", category: "stego", difficulty: 1,
+    tagline: { th: "LSB steg ในไฟล์เสียง WAV", en: "LSB steg in WAV audio" },
+    description: { th: "ซ่อน/ดึงข้อมูลใน least-significant bits ของตัวอย่างเสียง WAV", en: "Hides/extracts data in the LSBs of WAV audio samples." },
+    official: "https://github.com/ragibson/Steganography", install: ["pipx install stego-lsb"], tags: ["audio", "wav", "lsb"],
+  },
+  {
+    id: "aperisolve", name: "Aperi'Solve", category: "stego", difficulty: 1,
+    tagline: { th: "วิเคราะห์ steg รูปแบบครบบนเว็บ", en: "All-in-one image steg analysis (web)" },
+    description: { th: "อัปรูปแล้วมันรัน zsteg, steghide, binwalk, exiftool, bit-plane ให้ในหน้าเดียว", en: "Upload an image and it runs zsteg, steghide, binwalk, exiftool and bit-planes in one page." },
+    official: "https://www.aperisolve.com/", install: ["# web tool"], tags: ["image", "auto", "web"],
+  },
+
+  // ── rev / pwn ──
+  {
+    id: "objdump", name: "objdump / binutils", category: "rev", difficulty: 2, installed: true,
+    tagline: { th: "disassemble เร็ว ๆ บนคอมมานด์ไลน์", en: "Quick command-line disassembly" },
+    description: { th: "ดู disassembly, section, symbol ของ binary แบบไว ๆ ก่อนเปิด Ghidra", en: "Dumps disassembly, sections and symbols of a binary quickly before opening Ghidra." },
+    official: "https://sourceware.org/binutils/docs/binutils/objdump.html", install: ["# binutils; on macOS use gobjdump or llvm-objdump"],
+    usage: [{ cmd: "objdump -d -M intel ./bin | less", desc: { th: "disassemble แบบ Intel syntax", en: "Disassemble in Intel syntax" } }],
+    tags: ["disassemble", "binary"],
+  },
+  {
+    id: "one-gadget", name: "one_gadget", category: "rev", difficulty: 3,
+    tagline: { th: "หา one-shot RCE gadget ใน libc", en: "Find one-shot RCE gadgets in libc" },
+    description: { th: "หา address ใน libc ที่กระโดดไปแล้วได้ shell ทันที ใช้ในโจทย์ pwn heap/ROP", en: "Finds an address in libc that spawns a shell in one jump — used in heap/ROP pwn." },
+    official: "https://github.com/david942j/one_gadget", install: ["gem install one_gadget"], tags: ["pwn", "libc", "rce"],
+    demo: { title: { th: "หา one_gadget ใน libc", en: "Find a one_gadget in libc" }, prompt: "ctf", steps: [
+      { cmd: "one_gadget /lib/x86_64-linux-gnu/libc.so.6", out: "0x50a37 execve(\"/bin/sh\", rsp+0x40, environ)\nconstraints:\n  rsp & 0xf == 0\n  rcx == NULL\n\n0xebcf1 execve(\"/bin/sh\", r10, rdx)\nconstraints:\n  [r10] == NULL || r10 == NULL" },
+      { comment: "jump to 0x50a37 when the constraints hold = instant shell" } ] },
+  },
+  {
+    id: "strace-ltrace", name: "strace / ltrace", category: "rev", difficulty: 2,
+    tagline: { th: "ดู syscall / library call ตอนรัน", en: "Trace syscalls / library calls at runtime" },
+    description: { th: "ดูว่าโปรแกรมเรียก syscall หรือฟังก์ชัน library อะไร มักเผย logic การเช็ค flag", en: "Shows which syscalls or library functions a program calls — often reveals the flag check." },
+    official: "https://strace.io/", install: ["# Linux; on macOS use dtruss/lldb"], tags: ["trace", "dynamic", "syscall"],
+    demo: { title: { th: "จับ strcmp ที่เทียบ flag", en: "Catch the strcmp on the flag" }, prompt: "kali@ctf", steps: [
+      { cmd: "ltrace ./crackme <<< 'guess'", out: "printf(\"Enter flag: \")\nfgets(\"guess\\n\", 32, stdin)\nstrcmp(\"guess\", \"CTT{ltr4c3_l34ks_1t}\") = -1\nputs(\"Nope.\")" },
+      { comment: "ltrace printed the expected string right there" } ] },
+  },
+  {
+    id: "gef", name: "GEF", category: "rev", difficulty: 3,
+    tagline: { th: "ปลั๊กอิน GDB สาย exploit (ทางเลือก pwndbg)", en: "Exploit-focused GDB plugin (pwndbg alt)" },
+    description: { th: "เพิ่มมุมมอง register/stack/heap และคำสั่งช่วยหา offset, pattern, ROP ใน GDB", en: "Adds register/stack/heap views and helpers for offsets, patterns and ROP to GDB." },
+    official: "https://github.com/hugsy/gef", install: ["# bash -c \"$(curl -fsSL https://gef.blah.cat/sh)\""], tags: ["gdb", "pwn", "debug"],
+  },
+  {
+    id: "ida-free", name: "IDA Free", category: "rev", difficulty: 3,
+    tagline: { th: "disassembler ยอดนิยม (รุ่นฟรี)", en: "The popular disassembler (free edition)" },
+    description: { th: "IDA รุ่นฟรีมี disassembler + decompiler พื้นฐาน คนสาย rev หลายคนถนัดมือ", en: "IDA's free edition offers a disassembler and basic decompiler that many reversers prefer." },
+    official: "https://hex-rays.com/ida-free/", install: ["# download from hex-rays.com"], tags: ["disassembler", "gui"],
+  },
+
+  // ── network ──
+  {
+    id: "scapy", name: "Scapy", category: "network", difficulty: 3,
+    tagline: { th: "สร้าง/แก้/ยิงแพ็กเก็ตด้วย Python", en: "Craft/edit/send packets in Python" },
+    description: { th: "ประกอบแพ็กเก็ตทีละ layer ยิงเอง อ่าน pcap และเขียนสคริปต์วิเคราะห์ทราฟฟิก", en: "Builds packets layer by layer, sends them, reads pcaps and scripts traffic analysis." },
+    official: "https://scapy.readthedocs.io/", install: ["pipx install scapy"], tags: ["packets", "python", "craft"],
+  },
+  {
+    id: "netexec", name: "NetExec (nxc)", category: "network", difficulty: 3,
+    tagline: { th: "โจมตี AD/SMB/WinRM หลายโฮสต์", en: "Attack AD/SMB/WinRM at scale" },
+    description: { th: "ทายาทของ CrackMapExec ใช้ spray credential, enum share, รันคำสั่งบนเครือข่าย Windows", en: "The CrackMapExec successor: spray credentials, enumerate shares and run commands across Windows networks." },
+    official: "https://github.com/Pennyw0rth/NetExec", install: ["pipx install netexec"], tags: ["ad", "smb", "lateral"],
+  },
+  {
+    id: "impacket", name: "Impacket", category: "network", difficulty: 3,
+    tagline: { th: "ชุดสคริปต์โปรโตคอล Windows", en: "Windows protocol script suite" },
+    description: { th: "รวมสคริปต์ (secretsdump, psexec, GetNPUsers) สำหรับโจมตี Active Directory", en: "A suite (secretsdump, psexec, GetNPUsers) for attacking Active Directory." },
+    official: "https://github.com/fortra/impacket", install: ["pipx install impacket"], tags: ["ad", "kerberos", "smb"],
+  },
+  {
+    id: "responder", name: "Responder", category: "network", difficulty: 3,
+    tagline: { th: "ดัก hash จาก LLMNR/NBT-NS poisoning", en: "Capture hashes via LLMNR/NBT-NS poisoning" },
+    description: { th: "ปลอมตอบ LLMNR/NBT-NS เพื่อดัก NetNTLM hash ในเครือข่าย Windows (สแล็บ lab)", en: "Spoofs LLMNR/NBT-NS replies to capture NetNTLM hashes on Windows LANs (lab use)." },
+    official: "https://github.com/lgandx/Responder", install: ["pipx install responder"], tags: ["poisoning", "ntlm", "mitm"],
+  },
+
+  // ── password ──
+  {
+    id: "crunch", name: "crunch", category: "password", difficulty: 1,
+    tagline: { th: "สร้าง wordlist ตามแพทเทิร์น", en: "Generate wordlists by pattern" },
+    description: { th: "สร้างลิสต์รหัสตามชุดอักขระ/ความยาว/รูปแบบที่กำหนด", en: "Generates password lists from a charset, length and pattern spec." },
+    official: "https://github.com/crunchsec/crunch", install: ["brew install crunch"], tags: ["wordlist", "generate"],
+  },
+  {
+    id: "medusa", name: "Medusa", category: "password", difficulty: 2,
+    tagline: { th: "brute login แบบขนาน (คู่แข่ง Hydra)", en: "Parallel login brute-forcer (Hydra rival)" },
+    description: { th: "เดารหัสบริการเครือข่ายแบบขนานความเร็วสูง รองรับหลายโปรโตคอล", en: "High-speed parallel brute-forcing of network service logins across many protocols." },
+    official: "https://github.com/jmk-foofus/medusa", install: ["brew install medusa"], tags: ["bruteforce", "login"],
+  },
+  {
+    id: "cupp", name: "CUPP", category: "password", difficulty: 1,
+    tagline: { th: "สร้าง wordlist จากข้อมูลส่วนตัวเป้าหมาย", en: "Build wordlists from a target's profile" },
+    description: { th: "ถามข้อมูล (ชื่อ, วันเกิด, สัตว์เลี้ยง) แล้วสร้างรหัสที่คนมักตั้งจริง", en: "Asks for details (name, birthday, pet) and generates the passwords people actually pick." },
+    official: "https://github.com/Mebus/cupp", install: ["# git clone; python3 cupp.py -i"], tags: ["wordlist", "osint", "profile"],
+  },
+
+  // ── mobile ──
+  {
+    id: "mobsf", name: "MobSF", category: "mobile", difficulty: 2,
+    tagline: { th: "วิเคราะห์แอปมือถืออัตโนมัติ (static+dynamic)", en: "Automated mobile app analysis (static+dynamic)" },
+    description: { th: "อัป APK/IPA แล้วได้รายงานช่องโหว่, permission, hardcoded secret, endpoint ครบ", en: "Upload an APK/IPA and get a full report of vulns, permissions, hardcoded secrets and endpoints." },
+    official: "https://mobsf.github.io/docs/", install: ["# docker run opensecurity/mobile-security-framework-mobsf"], tags: ["apk", "ios", "scanner"],
+  },
+  {
+    id: "objection", name: "Objection", category: "mobile", difficulty: 3,
+    tagline: { th: "สำรวจ/แก้แอปตอนรันบน Frida", en: "Runtime mobile exploration on Frida" },
+    description: { th: "bypass SSL pinning, root/jailbreak detection, ดู class/method ตอนรันโดยไม่ต้อง repack", en: "Bypass SSL pinning and root/jailbreak checks, and inspect classes/methods at runtime without repacking." },
+    official: "https://github.com/sensepost/objection", install: ["pipx install objection"], tags: ["frida", "runtime", "bypass"],
+  },
+  {
+    id: "apkleaks", name: "APKLeaks", category: "mobile", difficulty: 1,
+    tagline: { th: "หา secret/URI/endpoint ใน APK", en: "Scan APKs for secrets/URIs/endpoints" },
+    description: { th: "สแกน APK หา API key, URL, endpoint ที่ hardcode ไว้ อย่างรวดเร็ว", en: "Quickly scans an APK for hardcoded API keys, URLs and endpoints." },
+    official: "https://github.com/dwisiswant0/apkleaks", install: ["pipx install apkleaks"], tags: ["apk", "secrets", "recon"],
+    demo: { title: { th: "หา secret ที่ฝังใน APK", en: "Find secrets baked in an APK" }, prompt: "ctf", steps: [
+      { cmd: "apkleaks -f app.apk", out: "[LinkFinder]\n- https://api.ctf.local/v1/flag\n[Google API Key]\n- AIzaSyA...redacted\n[Generic Secret]\n- CTT{4pk_l34ks_s3cr3ts}" },
+      { comment: "hardcoded flag + a live endpoint + a leaked API key" } ] },
+  },
+
+  // ── misc ──
+  {
+    id: "jq", name: "jq", category: "misc", difficulty: 1, installed: true,
+    tagline: { th: "ประมวลผล JSON บนคอมมานด์ไลน์", en: "Process JSON on the command line" },
+    description: { th: "กรอง แปลง และดึงค่าจาก JSON — ใช้กับ API response และไฟล์ config บ่อย", en: "Filter, transform and extract from JSON — constantly useful for API responses and config files." },
+    official: "https://jqlang.github.io/jq/manual/", install: ["brew install jq"],
+    usage: [{ cmd: "curl -s api/x | jq '.data[].flag'", desc: { th: "ดึงฟิลด์ flag ทุกตัว", en: "Pull every flag field" } }],
+    tags: ["json", "parse"],
+    demo: { title: { th: "ดึงค่าจาก JSON ด้วย jq", en: "Extract from JSON with jq" }, prompt: "ctf", steps: [
+      { cmd: "curl -s http://10.10.11.42/api/users | jq '.[] | select(.role==\"admin\") | .token'", out: "\"CTT{jq_f1lt3rs_j50n}\"" },
+      { comment: "filtered the admin user's token straight out of the response" } ] },
+  },
+  {
+    id: "ffmpeg", name: "FFmpeg", category: "misc", difficulty: 2, installed: true,
+    tagline: { th: "แปลง/แยกไฟล์เสียง-วิดีโอ", en: "Convert / dissect audio & video" },
+    description: { th: "แปลงฟอร์แมต, แยกเฟรม, ดึง stream ที่ซ่อน — โจทย์มีเดียใช้บ่อย", en: "Transcode, extract frames and pull hidden streams — a staple for media challenges." },
+    official: "https://ffmpeg.org/documentation.html", install: ["brew install ffmpeg"],
+    usage: [{ cmd: "ffmpeg -i in.mp4 -map 0 out/", desc: { th: "แยกทุก stream ออกมา", en: "Extract every stream" } }],
+    tags: ["audio", "video", "convert"],
+  },
+  {
+    id: "imagemagick", name: "ImageMagick", category: "misc", difficulty: 1, installed: true,
+    tagline: { th: "แปลง/วิเคราะห์รูปบนคอมมานด์ไลน์", en: "Convert / inspect images on the CLI" },
+    description: { th: "แปลงฟอร์แมต, ปรับ contrast เผยข้อความจาง, แยกเฟรม GIF — งานรูปทั่วไป", en: "Converts formats, boosts contrast to reveal faint text, splits GIF frames — general image work." },
+    official: "https://imagemagick.org/", install: ["brew install imagemagick"],
+    usage: [{ cmd: "magick in.png -auto-level out.png", desc: { th: "ดึง contrast เผยข้อความซ่อน", en: "Stretch contrast to reveal hidden text" } }],
+    tags: ["image", "convert"],
+  },
+  {
+    id: "gnupg", name: "GnuPG (gpg)", category: "misc", difficulty: 2, installed: true,
+    tagline: { th: "เข้ารหัส/ถอด/เซ็นด้วย PGP", en: "PGP encrypt / decrypt / sign" },
+    description: { th: "จัดการไฟล์ .gpg/.asc, ถอดข้อความ PGP, ตรวจลายเซ็น — โจทย์ crypto/forensic", en: "Handles .gpg/.asc files, decrypts PGP messages and verifies signatures — crypto/forensic challenges." },
+    official: "https://gnupg.org/documentation/", install: ["brew install gnupg"],
+    usage: [{ cmd: "gpg -d secret.gpg", desc: { th: "ถอดไฟล์ที่เข้ารหัส", en: "Decrypt an encrypted file" } }],
+    tags: ["pgp", "encrypt", "sign"],
   },
 ];
 
