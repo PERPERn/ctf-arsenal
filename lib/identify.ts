@@ -9,9 +9,13 @@ export interface DecodeResult { chain: string[]; text: string; isFlag: boolean; 
 export interface Suggestion { tool?: string; text: { th: string; en: string }; }
 export interface JwtParts { header: Record<string, unknown>; payload: Record<string, unknown>; warnings: string[]; }
 export interface TextReport { input: string; ids: IdItem[]; decodes: DecodeResult[]; answer?: string; suggestions: Suggestion[]; jwt?: JwtParts; plaintext: boolean; terminal: boolean; }
+export interface Embedded { offset: number; type: string; }
+export interface MetaText { key: string; value: string; }
+export interface StegoFind { method: string; text: string; isFlag: boolean; }
 export interface FileReport {
   name: string; size: number; entropy: number; magic?: string; hex: string;
   strings: string[]; flags: string[]; suggestions: Suggestion[]; text?: TextReport;
+  embedded: Embedded[]; metaText: MetaText[];
 }
 
 const FLAG_RE = /\b([A-Za-z][A-Za-z0-9_.\-]{1,24})\{([^{}\x00-\x1f]{1,200}?)\}/;
@@ -84,12 +88,33 @@ function reverse(s: string): string | null { return s.length < 4 ? null : [...s]
 const MORSE: Record<string, string> = { ".-":"A","-...":"B","-.-.":"C","-..":"D",".":"E","..-.":"F","--.":"G","....":"H","..":"I",".---":"J","-.-":"K",".-..":"L","--":"M","-.":"N","---":"O",".--.":"P","--.-":"Q",".-.":"R","...":"S","-":"T","..-":"U","...-":"V",".--":"W","-..-":"X","-.--":"Y","--..":"Z","-----":"0",".----":"1","..---":"2","...--":"3","....-":"4",".....":"5","-....":"6","--...":"7","---..":"8","----.":"9",".-.-.-":".","--..--":",","..--..":"?","-..-.":"/","-....-":"-","..--.-":"_","-.--.":"(","-.--.-":")",".--.-.":"@","---...":":","-.-.--":"!" };
 function morse(s: string): string | null { let t = s.trim().replace(/_/g, "-"); if (!t || /[^.\-/ \t\n|]/.test(t) || (!t.includes(".") && !t.includes("-"))) return null; const words = t.split(/\s*[/|]\s*|\s{3,}/); const out = words.map((w) => w.split(/\s+/).filter(Boolean).map((tok) => MORSE[tok] ?? "?").join("")).join(" "); if (!out || (out.match(/\?/g) || []).length > out.length * 0.3) return null; return out; }
 function caesar(s: string): string | null { if (!/[A-Za-z]/.test(s)) return null; let best: string | null = null, bs = 0; for (let sh = 1; sh < 26; sh++) { if (sh === 13) continue; const o = s.replace(/[A-Za-z]/g, (c) => { const b = c <= "Z" ? 65 : 97; return String.fromCharCode(((c.charCodeAt(0) - b + sh) % 26) + b); }); const sc = scoreText(o, false) + (looksLikeFlag(o) ? 0.5 : 0); if (sc > bs) { bs = sc; best = o; } } return bs > 0.6 ? best : null; }
+function a1z26(s: string): string | null {
+  const t = s.trim().split(/[^0-9]+/).filter(Boolean);
+  if (t.length < 2 || !t.every((x) => +x >= 1 && +x <= 26)) return null;
+  return t.map((x) => String.fromCharCode(64 + +x)).join("");
+}
+function bacon(s: string): string | null {
+  let t = s.toUpperCase().replace(/[^AB01]/g, "");
+  t = t.replace(/0/g, "A").replace(/1/g, "B");
+  if (t.length < 5 || t.length % 5) return null;
+  const M: Record<string, number> = {};
+  const order = "AABBB"; // placeholder to avoid unused
+  let out = "";
+  for (let i = 0; i < t.length; i += 5) {
+    const grp = t.slice(i, i + 5);
+    const val = parseInt(grp.replace(/A/g, "0").replace(/B/g, "1"), 2);
+    if (val > 25) return null;
+    out += String.fromCharCode(65 + val);
+  }
+  return out || null;
+}
 function xor1(s: string): string | null { if (s.length < 4) return null; let best: string | null = null, bs = 0; for (let k = 1; k < 256; k++) { const o = [...s].map((c) => String.fromCharCode(c.charCodeAt(0) ^ k)).join(""); const sc = scoreText(o, false) + (looksLikeFlag(o) ? 0.5 : 0); if (sc > bs) { bs = sc; best = o; } } return bs > 0.6 ? best : null; }
 
 const DECODERS: [string, (s: string) => string | null][] = [
   ["base64", b64], ["base64url", b64url], ["base32", b32], ["hex", hex], ["hex-spaced", hexSpaced],
   ["binary", bin], ["decimal", dec], ["url-decode", urlDec], ["rot13", rot13], ["rot47", rot47],
-  ["atbash", atbash], ["caesar", caesar], ["reverse", reverse], ["morse", morse], ["xor-1byte", xor1],
+  ["atbash", atbash], ["caesar", caesar], ["reverse", reverse], ["morse", morse],
+  ["a1z26", a1z26], ["bacon", bacon], ["xor-1byte", xor1],
 ];
 const SELF_INV = new Set(["rot13", "rot47", "atbash", "reverse"]);
 
@@ -279,6 +304,96 @@ function extractStrings(b: Uint8Array, min = 6, max = 60): string[] {
   return out.slice(0, max);
 }
 
+
+function scanEmbedded(b: Uint8Array): Embedded[] {
+  const found: Embedded[] = [];
+  const limit = Math.min(b.length, 3_000_000);
+  // secondary file signatures after offset 0
+  for (const [sig, name] of MAGICS) {
+    if (sig.length < 3) continue;
+    for (let i = 1; i + sig.length <= limit; i++) {
+      let ok = true;
+      for (let j = 0; j < sig.length; j++) if (b[i + j] !== sig[j]) { ok = false; break; }
+      if (ok) { found.push({ offset: i, type: name }); break; }
+    }
+    if (found.length >= 8) break;
+  }
+  // trailing data after a PNG IEND or JPEG EOI
+  if (b[0] === 0x89 && b[1] === 0x50) {
+    for (let i = 8; i + 8 <= b.length; ) {
+      const len = (b[i] << 24) | (b[i + 1] << 16) | (b[i + 2] << 8) | b[i + 3];
+      const type = String.fromCharCode(b[i + 4], b[i + 5], b[i + 6], b[i + 7]);
+      const next = i + 12 + (len >>> 0);
+      if (type === "IEND") { if (next < b.length) found.push({ offset: next, type: `trailing data after PNG IEND (${b.length - next} bytes)` }); break; }
+      if (next <= i || next > b.length) break;
+      i = next;
+    }
+  } else if (b[0] === 0xff && b[1] === 0xd8) {
+    for (let i = 2; i + 1 < b.length; i++) if (b[i] === 0xff && b[i + 1] === 0xd9) { if (i + 2 < b.length) found.push({ offset: i + 2, type: `trailing data after JPEG EOI (${b.length - i - 2} bytes)` }); break; }
+  }
+  return found.sort((a, z) => a.offset - z.offset).slice(0, 10);
+}
+
+function pngTextChunks(b: Uint8Array): MetaText[] {
+  if (!(b[0] === 0x89 && b[1] === 0x50)) return [];
+  const out: MetaText[] = [];
+  for (let i = 8; i + 12 <= b.length && out.length < 12; ) {
+    const len = ((b[i] << 24) | (b[i + 1] << 16) | (b[i + 2] << 8) | b[i + 3]) >>> 0;
+    const type = String.fromCharCode(b[i + 4], b[i + 5], b[i + 6], b[i + 7]);
+    const data = b.slice(i + 8, i + 8 + len);
+    if (type === "tEXt" || type === "iTXt") {
+      const raw = new TextDecoder("latin1").decode(data);
+      const nul = raw.indexOf("\u0000");
+      const key = nul >= 0 ? raw.slice(0, nul) : type;
+      let val = nul >= 0 ? raw.slice(nul + 1) : raw;
+      if (type === "iTXt") val = val.replace(/^[\u0000-\u001f]+/, "");
+      out.push({ key, value: val.slice(0, 300) });
+    } else if (type === "zTXt") {
+      out.push({ key: "zTXt", value: "(zlib-compressed text chunk present)" });
+    }
+    if (type === "IEND") break;
+    const next = i + 12 + len;
+    if (next <= i || next > b.length) break;
+    i = next;
+  }
+  return out;
+}
+
+// Extract LSB steganography from decoded RGBA pixels (zsteg-lite). Runs in the
+// browser after the image is drawn to a canvas.
+export function stegoFromPixels(px: Uint8ClampedArray): StegoFind[] {
+  const finds: StegoFind[] = [];
+  const cap = Math.min(px.length, 4_000_000); // pixels*4
+  const channelSets: [string, number[]][] = [
+    ["RGB", [0, 1, 2]], ["R", [0]], ["G", [1]], ["B", [2]], ["A", [3]], ["BGR", [2, 1, 0]],
+  ];
+  for (const [cname, chans] of channelSets) {
+    for (const msbFirst of [false, true]) {
+      const bytes: number[] = [];
+      let cur = 0, nb = 0;
+      for (let i = 0; i < cap && bytes.length < 20000; i += 4) {
+        for (const ch of chans) {
+          const bit = px[i + ch] & 1;
+          if (msbFirst) cur = (cur << 1) | bit; else cur = cur | (bit << nb);
+          if (++nb === 8) { bytes.push(cur & 0xff); cur = 0; nb = 0; }
+        }
+      }
+      const str = String.fromCharCode(...bytes);
+      const flag = looksLikeFlag(str);
+      if (flag) { finds.push({ method: `${cname} LSB ${msbFirst ? "MSB-first" : "LSB-first"}`, text: flag.flag, isFlag: true }); continue; }
+      // longest printable run
+      const m = str.match(/[\x20-\x7e]{8,}/g);
+      if (m) {
+        const best = m.sort((a, z) => z.length - a.length)[0];
+        if (best.length >= 10 && /[a-zA-Z]{4,}/.test(best)) finds.push({ method: `${cname} LSB ${msbFirst ? "MSB-first" : "LSB-first"}`, text: best.slice(0, 200), isFlag: false });
+      }
+    }
+  }
+  const seen = new Set<string>();
+  return finds.filter((f) => (seen.has(f.text) ? false : (seen.add(f.text), true)))
+    .sort((a, z) => Number(z.isFlag) - Number(a.isFlag)).slice(0, 6);
+}
+
 export function analyzeFile(name: string, buf: ArrayBuffer): FileReport {
   const b = new Uint8Array(buf);
   const magic = matchMagic(b);
@@ -298,5 +413,7 @@ export function analyzeFile(name: string, buf: ArrayBuffer): FileReport {
   let text: TextReport | undefined;
   const printable = [...b.slice(0, 4096)].filter((x) => (x >= 32 && x < 127) || x === 10 || x === 9 || x === 13).length / Math.min(b.length, 4096);
   if (b.length < 200000 && printable > 0.9) text = analyzeText(whole.slice(0, 20000));
-  return { name, size: b.length, entropy: ent, magic, hex, strings: interesting, flags: [...flagSet].slice(0, 20), suggestions, text };
+  const embedded = scanEmbedded(b);
+  const metaText = pngTextChunks(b);
+  return { name, size: b.length, entropy: ent, magic, hex, strings: interesting, flags: [...flagSet].slice(0, 20), suggestions, text, embedded, metaText };
 }
