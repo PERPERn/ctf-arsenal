@@ -1,0 +1,20 @@
+# Render Blueprint — deploys CTF Arsenal as a Static Site (same host style as
+# the reference site). In Render: New → Blueprint and point it at this repo,
+# or create a Static Site manually using the build command + publish path.
+services:
+  - type: web
+    name: ctf-arsenal
+    runtime: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./out
+    pullRequestPreviewsEnabled: true
+    # Next static export emits a real index.html per route (trailingSlash),
+    # so no SPA catch-all rewrite is needed — Render serves the files directly.
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+    routes:
+      - type: rewrite
+        source: /404
+        destination: /404.html

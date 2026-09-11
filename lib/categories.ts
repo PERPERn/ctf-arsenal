@@ -1,0 +1,36 @@
+import type { Category } from "./types";
+
+export const categories: Category[] = [
+  { id: "recon", icon: "🛰️", color: "#38bdf8",
+    name: { th: "Recon / OSINT", en: "Recon / OSINT" },
+    blurb: { th: "เก็บข้อมูลเป้าหมาย เปิดพื้นผิวโจมตี", en: "Map the target and its attack surface" } },
+  { id: "web", icon: "🕸️", color: "#a78bfa",
+    name: { th: "Web Application", en: "Web Application" },
+    blurb: { th: "ช่องโหว่เว็บ ฉีดข้อมูล เดาไดเรกทอรี", en: "Web bugs, injection, fuzzing" } },
+  { id: "crypto", icon: "🔐", color: "#f472b6",
+    name: { th: "Cryptography", en: "Cryptography" },
+    blurb: { th: "ถอดรหัส วิเคราะห์ cipher โจมตี RSA", en: "Break ciphers, attack RSA, decode" } },
+  { id: "forensics", icon: "🔬", color: "#34d399",
+    name: { th: "Digital Forensics", en: "Digital Forensics" },
+    blurb: { th: "แกะไฟล์ memory disk pcap", en: "Carve files, memory, disk, pcap" } },
+  { id: "stego", icon: "🖼️", color: "#fbbf24",
+    name: { th: "Steganography", en: "Steganography" },
+    blurb: { th: "หาข้อมูลซ่อนในรูป เสียง ไฟล์", en: "Find data hidden in media" } },
+  { id: "rev", icon: "⚙️", color: "#fb923c",
+    name: { th: "Reverse & Pwn", en: "Reverse & Pwn" },
+    blurb: { th: "แกะ binary หา bug exploit", en: "Disassemble binaries, build exploits" } },
+  { id: "network", icon: "📡", color: "#22d3ee",
+    name: { th: "Network Security", en: "Network Security" },
+    blurb: { th: "สแกน ดักจับ วิเคราะห์ทราฟฟิก", en: "Scan, sniff, analyse traffic" } },
+  { id: "password", icon: "🔑", color: "#f87171",
+    name: { th: "Password / Hash", en: "Password / Hash" },
+    blurb: { th: "แครกแฮช เดารหัสผ่าน", en: "Crack hashes and passwords" } },
+  { id: "mobile", icon: "📱", color: "#4ade80",
+    name: { th: "Mobile", en: "Mobile" },
+    blurb: { th: "แกะ APK วิเคราะห์แอป", en: "Decompile and analyse apps" } },
+  { id: "misc", icon: "🧰", color: "#c084fc",
+    name: { th: "Misc / All-in-one", en: "Misc / All-in-one" },
+    blurb: { th: "มีดพับสารพัดประโยชน์", en: "Swiss-army helpers" } },
+];
+
+export const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c]));
