@@ -49,8 +49,9 @@ export function Identify({ compact = false }: { compact?: boolean }) {
   const runText = useCallback((v: string) => {
     setFr(null); setImgUrl(null); setStego(null); setRsaOut(null);
     if (!v.trim()) { setTr(null); setRsaIn(null); return; }
-    setRsaIn(looksLikeRSA(v) ? parseRSA(v) : null);
-    setTr(analyzeText(v));
+    const isRsa = looksLikeRSA(v);
+    setRsaIn(isRsa ? parseRSA(v) : null);
+    setTr(isRsa ? null : analyzeText(v));
   }, []);
   const runFile = useCallback(async (file: File) => {
     setTr(null); setRsaIn(null); setRsaOut(null); setStego(null); setText("");
