@@ -7,7 +7,8 @@ export type Lang = "th" | "en";
 export interface IdItem { conf: "high" | "med" | "low"; label: string; detail?: string; }
 export interface DecodeResult { chain: string[]; text: string; isFlag: boolean; score: number; }
 export interface Suggestion { tool?: string; text: { th: string; en: string }; }
-export interface TextReport { input: string; ids: IdItem[]; decodes: DecodeResult[]; answer?: string; suggestions: Suggestion[]; }
+export interface JwtParts { header: Record<string, unknown>; payload: Record<string, unknown>; warnings: string[]; }
+export interface TextReport { input: string; ids: IdItem[]; decodes: DecodeResult[]; answer?: string; suggestions: Suggestion[]; jwt?: JwtParts; plaintext: boolean; terminal: boolean; }
 export interface FileReport {
   name: string; size: number; entropy: number; magic?: string; hex: string;
   strings: string[]; flags: string[]; suggestions: Suggestion[]; text?: TextReport;
@@ -155,8 +156,8 @@ export function identifyText(raw: string): IdItem[] {
   if (s.startsWith("-----BEGIN")) out.push({ conf: "high", label: "PEM block", detail: s.split("\n")[0] });
   if (/^[.\-_/ \t\n|]+$/.test(s) && n > 2) out.push({ conf: "high", label: "Morse code" });
   if (/^[01\s]+$/.test(s) && n > 8) out.push({ conf: "high", label: "Binary digits" });
-  if (/^[A-Z2-7=\s]+$/.test(s) && n > 8 && s.includes("=")) out.push({ conf: "med", label: "Base32" });
-  if (/^[A-Za-z0-9+/=\s]+$/.test(s) && n > 8 && !/^[0-9a-fA-F\s]+$/.test(s)) out.push({ conf: s.includes("=") || n % 4 === 0 ? "med" : "low", label: "Base64" });
+  if (/^[A-Z2-7]+=*$/.test(s) && n >= 8 && s.includes("=") && !/\s/.test(s)) out.push({ conf: "med", label: "Base32" });
+  if (/^[A-Za-z0-9+/]+={0,2}$/.test(s) && n >= 8 && (s.includes("=") || n % 4 === 0) && !/^[0-9a-fA-F]+$/.test(s) && !/\s/.test(s)) out.push({ conf: "med", label: "Base64" });
   if (/%[0-9a-fA-F]{2}/.test(s)) out.push({ conf: "med", label: "URL-encoded" });
   if (/[​-‏⁠﻿]/.test(s)) out.push({ conf: "high", label: "Zero-width characters", detail: "unicode steganography" });
   if (s.startsWith("{") || s.startsWith("[")) { try { JSON.parse(s); out.push({ conf: "high", label: "JSON" }); } catch {} }
@@ -197,12 +198,39 @@ function pickEndorsed(results: DecodeResult[], preferred: Set<string>): DecodeRe
   cands.sort((a, b) => (a.chain.length - b.chain.length) || (b.score - a.score));
   return cands[0];
 }
+function decodeJwt(s: string): JwtParts | undefined {
+  const parts = s.split(".");
+  if (parts.length < 2) return undefined;
+  const dec = (p: string) => { try { return JSON.parse(atob(p.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (p.length % 4)) % 4))); } catch { return null; } };
+  const header = dec(parts[0]), payload = dec(parts[1]);
+  if (!header || !payload || typeof header !== "object") return undefined;
+  const warnings: string[] = [];
+  const alg = String((header as any).alg ?? "");
+  if (/^none$/i.test(alg)) warnings.push("alg:none — token is unsigned and forgeable");
+  if (/^HS/.test(alg)) warnings.push("HMAC alg — a weak secret can be cracked (hashcat -m 16500)");
+  if ((payload as any).exp && (payload as any).exp * 1000 < Date.now()) warnings.push("token is expired");
+  return { header, payload, warnings };
+}
+
+const TERMINAL_LABELS = /^(Hash|Unix crypt|JWT|UUID|MAC|IPv4|PEM|Unix timestamp|JSON)/;
+
 export function analyzeText(raw: string): TextReport {
   const trimmed = raw.trim();
   const ids = identifyText(trimmed);
   const preferred = preferredDecoders(trimmed);
-  const decodes = decodeChain(trimmed, preferred);
+  const allDecodes = decodeChain(trimmed, preferred);
   const flag = looksLikeFlag(trimmed);
+  const jwt = ids.some((i) => i.label === "JWT") ? decodeJwt(trimmed) : undefined;
+  const inputScore = scoreText(trimmed, false);
+  const plaintext = !flag && inputScore >= 0.55 && !/^[A-Za-z0-9+/=]+$/.test(trimmed);
+
+  // Keep only decodes that mean something: a flag, an endorsed first step, or a
+  // genuinely readable result that beats the raw input. Everything else is the
+  // combinatorial noise that made Identify feel unreliable.
+  const decodes = allDecodes.filter((d) =>
+    d.isFlag || preferred.has(d.chain[0]) || (d.score >= 0.6 && scoreText(d.text, false) > inputScore + 0.08)
+  ).slice(0, 8);
+
   let answer: string | undefined;
   if (flag) answer = flag.flag;
   else {
@@ -210,11 +238,20 @@ export function analyzeText(raw: string): TextReport {
     if (f) answer = f.text;
     else {
       const e = pickEndorsed(decodes, preferred);
-      if (e && scoreText(e.text, false) >= 0.4) answer = e.text;
+      if (e && scoreText(e.text, false) >= 0.45) answer = e.text;
       else if (decodes[0] && scoreText(decodes[0].text, false) >= 0.72) answer = decodes[0].text;
     }
   }
-  return { input: raw, ids, decodes, answer, suggestions: suggestFor(ids.map((i) => i.label)) };
+
+  // Once we have a confident answer, drop everything that isn't a flag or an
+  // endorsed decode so the panel shows the solution, not near-misses.
+  let shown = decodes;
+  if (answer) {
+    const clean = decodes.filter((d) => d.isFlag || preferred.has(d.chain[0]));
+    if (clean.length) shown = clean;
+  }
+  const terminal = !answer && !plaintext && ids.length > 0 && TERMINAL_LABELS.test(ids[0].label);
+  return { input: raw, ids, decodes: shown, answer, suggestions: suggestFor(ids.map((i) => i.label)), jwt, plaintext, terminal };
 }
 
 // ── file analysis ───────────────────────────────────────────────────────────

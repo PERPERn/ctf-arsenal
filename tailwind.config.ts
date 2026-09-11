@@ -6,8 +6,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       colors: {
         bg: "rgb(var(--bg) / <alpha-value>)",
@@ -17,8 +17,9 @@ const config: Config = {
         fg: "rgb(var(--fg) / <alpha-value>)",
         muted: "rgb(var(--muted) / <alpha-value>)",
         brand: "rgb(var(--brand) / <alpha-value>)",
-        brand2: "rgb(var(--brand2) / <alpha-value>)",
-        accent: "rgb(var(--accent) / <alpha-value>)",
+        brand2: "rgb(var(--brand) / <alpha-value>)",
+        accent: "rgb(var(--brand) / <alpha-value>)",
+        ok: "rgb(var(--ok) / <alpha-value>)",
       },
       boxShadow: {
         glow: "0 0 40px -8px rgb(var(--brand) / 0.45)",

@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
+
+const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
 
 export const metadata: Metadata = {
   title: "CTF Arsenal — Cybersecurity & CTF Toolbox",
@@ -12,11 +16,11 @@ export const metadata: Metadata = {
   openGraph: { title: "CTF Arsenal", description: "Cybersecurity & CTF tools with bilingual guides and live demos.", type: "website" },
 };
 
-export const viewport = { themeColor: "#0a0c14", width: "device-width", initialScale: 1 };
+export const viewport = { themeColor: "#0a0b0d", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="th" className="dark" suppressHydrationWarning>
+    <html lang="th" className={`dark ${sans.variable} ${mono.variable}`} suppressHydrationWarning>
       <body className="min-h-screen antialiased">
         <script
           dangerouslySetInnerHTML={{
